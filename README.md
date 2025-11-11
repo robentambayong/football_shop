@@ -1,3 +1,108 @@
+# Football Shop - PBD Individual Assignment
+### Roben Joseph B Tambayong
+
+## Assignment 8: Flutter Navigation, Layouts, Forms, and Input Elements
+
+### 1. Explain the difference between `Navigator.push()` and `Navigator.pushReplacement()` in Flutter. In what context of your application is each best used?
+
+The key difference is how they manage the navigation stack (the "history" of pages).
+
+* `Navigator.push()`: This method adds a new page (route) on top of the current stack. The user can press the back button to "pop" the new page and return to the one before it.
+    * In My App: I used `push()` when the user taps the "Create Product" card on the home page. This pushes the `ProductFormPage` on top of `MyHomePage`, allowing the user to fill out the form and then press the back arrow to return to the home page.
+
+* `Navigator.pushReplacement()`: This method replaces the current page with a new one. The old page is removed from the stack, so the user cannot go back to it.
+    * In My App: I used `pushReplacement()` in the drawer's "Home" button. If the user is on the `ProductFormPage` and clicks "Home" in the drawer, we replace the form page with the home page. This prevents a confusing stack build-up (for example: `Home -> Form -> Home -> Form`) and makes the navigation feel more logical.
+
+### 2. How do you use hierarchy widget like `Scaffold`, `AppBar`, dan `Drawer` to build a consistent page structure in the your application?
+
+These widgets are the primary tools for a consistent look and feel.
+
+1.  **`Scaffold`**: This is the base for every page. I use `Scaffold` as the root widget for both `MyHomePage` and `ProductFormPage`. It provides a standard structure for placing common UI elements.
+2.  **`AppBar`**: This is a property of `Scaffold` (`appBar: ...`). By placing an `AppBar` in the `Scaffold` of both pages, I ensure that every page has a familiar top bar with a title.
+3.  **`Drawer`**: This is also a property of `Scaffold` (`drawer: ...`). By creating one `LeftDrawer` widget and adding it to the `Scaffold` of both `MyHomePage` and `ProductFormPage`, I guarantee that every page has the exact same slide-out menu with the same navigation links, making the app's navigation predictable.
+
+Using this hierarchy (`Scaffold` as the parent, with `AppBar` and `Drawer` as its properties) is the key to making the app's structure consistent.
+
+### 3. In the context of user interface design, what do you think is the advantages of using layout widget like `Padding`, `SingleChildScrollView`, and `ListView` when displaying form elements? Provide usage examples from your application.
+
+These widgets are essential for creating a clean, functional, and user-friendly form.
+
+* **`Padding`**:
+    * **Advantage:** Its advantage is creating "breathing room" or whitespace. It prevents UI elements from looking cramped and touching the edges of the screen or each other. This makes the form much easier to read and visually appealing.
+    * **Example:** I wrapped every `TextFormField` (like "Product Name" and "Price") in a `Padding(padding: const EdgeInsets.all(8.0), ...)` to give each field space.
+
+* **`SingleChildScrollView`**:
+    * **Advantage:** It prevents "pixel overflow" errors. When the user taps a text field, the keyboard pops up and takes up screen space. Without this widget, the form fields at the bottom might be inaccessible or cause a yellow/black striped error. `SingleChildScrollView` wraps the form and automatically makes it scrollable if the content (the form + the keyboard) is too tall for the screen.
+    * **Example:** In `product_form.dart`, the entire `Form` widget is the child of `SingleChildScrollView` to ensure the user can always scroll to the "Save" button, even with the keyboard open.
+
+* **`ListView`**:
+    * **Advantage:** It provides a scrollable list of items. It is highly efficient for displaying an unknown number of items, but in this context, it's used for a simple, scrollable menu.
+    * **Example:** I used `ListView` as the main child of my `LeftDrawer`. This allows me to add menu items ("Home", "Add Product") vertically. If I were to add 10 more links later, the `ListView` would automatically allow the user to scroll through them.
+
+### 4. How do you set the `color theme` so that your Football Shop have a visual identity that is consistent with the shop brand.
+
+I established a consistent visual identity in two ways:
+
+1.  **App-Wide Theme (`main.dart`):** I set a global theme in the `MaterialApp` widget. By defining `ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo))`, Flutter automatically generates a full color palette based on "indigo."
+2.  **Consistent Usage:**
+    * **Automatic:** In `MyHomePage`, the `AppBar`'s `backgroundColor` is set to `Theme.of(context).colorScheme.primary`. This automatically uses the "primary" color (derived from indigo) from the global theme.
+    * **Explicit:** In `ProductFormPage`, I explicitly set `backgroundColor: Colors.indigo` for the `AppBar` and the "Save" button's `ButtonStyle`.
+
+By using the same `Colors.indigo` (either as a seed or explicitly), the `AppBar` on every page, the main buttons, and the drawer header all share the same core brand color, making the app's visual identity consistent.
+
+---
+
+## Assignment 8: Flutter Navigation, Layouts, Forms, and Input Elements
+
+### 1. Explain the difference between `Navigator.push()` and `Navigator.pushReplacement()` in Flutter. In what context of your application is each best used?
+
+The key difference is how they manage the **navigation stack** (the "history" of pages).
+
+* **`Navigator.push()`**: This method **adds** a new page (route) on top of the current stack. The user can press the back button to "pop" the new page and return to the one before it.
+    * **In My App:** I used `push()` when the user taps the **"Create Product" card** on the home page. This pushes the `ProductFormPage` on top of `MyHomePage`, allowing the user to fill out the form and then press the back arrow to return to the home page.
+
+* **`Navigator.pushReplacement()`**: This method **replaces** the current page with a new one. The old page is removed from the stack, so the user cannot go back to it.
+    * **In My App:** I used `pushReplacement()` in the **drawer's "Home" button**. If the user is on the `ProductFormPage` and clicks "Home" in the drawer, we replace the form page with the home page. This prevents a confusing stack build-up (e.g., `Home -> Form -> Home -> Form`) and makes the navigation feel more logical.
+
+### 2. How do you use hierarchy widget like `Scaffold`, `AppBar`, dan `Drawer` to build a consistent page structure in the your application?
+
+These widgets are the primary tools for a consistent look and feel.
+
+1.  **`Scaffold`**: This is the base for every page. I use `Scaffold` as the root widget for both `MyHomePage` and `ProductFormPage`. It provides a standard structure for placing common UI elements.
+2.  **`AppBar`**: This is a property of `Scaffold` (`appBar: ...`). By placing an `AppBar` in the `Scaffold` of both pages, I ensure that every page has a familiar top bar with a title.
+3.  **`Drawer`**: This is also a property of `Scaffold` (`drawer: ...`). By creating one `LeftDrawer` widget and adding it to the `Scaffold` of both `MyHomePage` and `ProductFormPage`, I guarantee that every page has the exact same slide-out menu with the same navigation links, making the app's navigation predictable.
+
+Using this hierarchy (`Scaffold` as the parent, with `AppBar` and `Drawer` as its properties) is the key to making the app's structure consistent.
+
+### 3. In the context of user interface design, what do you think is the advantages of using layout widget like `Padding`, `SingleChildScrollView`, and `ListView` when displaying form elements? Provide usage examples from your application.
+
+These widgets are essential for creating a clean, functional, and user-friendly form.
+
+* **`Padding`**:
+    * **Advantage:** Its advantage is creating "breathing room" or whitespace. It prevents UI elements from looking cramped and touching the edges of the screen or each other. This makes the form much easier to read and visually appealing.
+    * **Example:** I wrapped every `TextFormField` (like "Product Name" and "Price") in a `Padding(padding: const EdgeInsets.all(8.0), ...)` to give each field space.
+
+* **`SingleChildScrollView`**:
+    * **Advantage:** It prevents "pixel overflow" errors. When the user taps a text field, the keyboard pops up and takes up screen space. Without this widget, the form fields at the bottom might be inaccessible or cause a yellow/black striped error. `SingleChildScrollView` wraps the form and automatically makes it scrollable if the content (the form + the keyboard) is too tall for the screen.
+    * **Example:** In `product_form.dart`, the entire `Form` widget is the child of `SingleChildScrollView` to ensure the user can always scroll to the "Save" button, even with the keyboard open.
+
+* **`ListView`**:
+    * **Advantage:** It provides a scrollable list of items. It is highly efficient for displaying an unknown number of items, but in this context, it's used for a simple, scrollable menu.
+    * **Example:** I used `ListView` as the main child of my `LeftDrawer`. This allows me to add menu items ("Home", "Add Product") vertically. If I were to add 10 more links later, the `ListView` would automatically allow the user to scroll through them.
+
+### 4. How do you set the `color theme` so that your Football Shop have a visual identity that is consistent with the shop brand.
+
+I established a consistent visual identity in two ways:
+
+1.  **App-Wide Theme (`main.dart`):** I set a global theme in the `MaterialApp` widget. By defining `ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo))`, Flutter automatically generates a full color palette based on "indigo."
+2.  **Consistent Usage:**
+    * **Automatic:** In `MyHomePage`, the `AppBar`'s `backgroundColor` is set to `Theme.of(context).colorScheme.primary`. This automatically uses the "primary" color (derived from indigo) from the global theme.
+    * **Explicit:** In `ProductFormPage`, I explicitly set `backgroundColor: Colors.indigo` for the `AppBar` and the "Save" button's `ButtonStyle`.
+
+By using the same `Colors.indigo` (either as a seed or explicitly), the `AppBar` on every page, the main buttons, and the drawer header all share the same core brand color, making the app's visual identity consistent.
+
+---
+
 # Assignment 7: Basic Elements of Flutter
 
 ### 1. Explain what a widget tree is in Flutter and how parent-child relationships work between widgets.
