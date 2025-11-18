@@ -1,5 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:football_shop/widgets/left_drawer.dart';
+import 'package:pbp_django_auth/pbp_django_auth.dart';
+import 'package:provider/provider.dart';
+import 'package:football_shop/screens/menu.dart';
 
 class ProductFormPage extends StatefulWidget {
   const ProductFormPage({super.key});
@@ -13,9 +16,12 @@ class _ProductFormPageState extends State<ProductFormPage> {
   String _name = "";
   int _price = 0;
   String _description = "";
+  String _category = "";
 
   @override
   Widget build(BuildContext context) {
+    final request = context.watch<CookieRequest>();
+
     return Scaffold(
       appBar: AppBar(
         title: const Center(
@@ -23,10 +29,10 @@ class _ProductFormPageState extends State<ProductFormPage> {
             'Add Product Form',
           ),
         ),
-        backgroundColor: Colors.indigo,
+        backgroundColor: const Color(0xFF388E3C), // Changed to Green
         foregroundColor: Colors.white,
       ),
-      drawer: const LeftDrawer(),
+      // Drawer is usually removed for forms to keep focus, but you can add it back if you really want.
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
@@ -71,7 +77,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
                   keyboardType: TextInputType.number,
                   onChanged: (String? value) {
                     setState(() {
-                      _price = int.tryParse(value ?? "0") ?? 0;
+                      _price = int.tryParse(value!) ?? 0;
                     });
                   },
                   validator: (String? value) {
@@ -79,10 +85,31 @@ class _ProductFormPageState extends State<ProductFormPage> {
                       return "Price cannot be empty!";
                     }
                     if (int.tryParse(value) == null) {
-                      return "Price must be a valid number!";
+                      return "Price must be a number!";
                     }
-                    if (int.parse(value) <= 0) {
-                      return "Price must be greater than zero!";
+                    return null;
+                  },
+                ),
+              ),
+              // --- Category Field (ADDED) ---
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: TextFormField(
+                  decoration: InputDecoration(
+                    hintText: "Category",
+                    labelText: "Category",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(5.0),
+                    ),
+                  ),
+                  onChanged: (String? value) {
+                    setState(() {
+                      _category = value!;
+                    });
+                  },
+                  validator: (String? value) {
+                    if (value == null || value.isEmpty) {
+                      return "Category cannot be empty!";
                     }
                     return null;
                   },
@@ -118,43 +145,41 @@ class _ProductFormPageState extends State<ProductFormPage> {
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: ElevatedButton(
-                    style: ButtonStyle(
-                      backgroundColor: WidgetStateProperty.all(Colors.indigo),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF388E3C), // Green
+                      foregroundColor: Colors.white,
                     ),
-                    onPressed: () {
+                    onPressed: () async {
                       if (_formKey.currentState!.validate()) {
-                        showDialog(
-                          context: context,
-                          builder: (context) {
-                            return AlertDialog(
-                              title: const Text('Product saved successfully!'),
-                              content: SingleChildScrollView(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Name: $_name'),
-                                    Text('Price: $_price'),
-                                    Text('Description: $_description'),
-                                  ],
-                                ),
-                              ),
-                              actions: [
-                                TextButton(
-                                  child: const Text('OK'),
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                    _formKey.currentState!.reset();
-                                    setState(() {
-                                      _name = "";
-                                      _price = 0;
-                                      _description = "";
-                                    });
-                                  },
-                                ),
-                              ],
-                            );
-                          },
+                        // Send data to Django
+                        // Use 127.0.0.1 for Chrome
+                        final response = await request.postJson(
+                          "http://127.0.0.1:8000/create-flutter/",
+                          jsonEncode(<String, String>{
+                            'name': _name,
+                            'price': _price.toString(),
+                            'category': _category,
+                            'description': _description,
+                          }),
                         );
+                        if (context.mounted) {
+                          if (response['status'] == 'success') {
+                            ScaffoldMessenger.of(context)
+                                .showSnackBar(const SnackBar(
+                              content: Text("Product saved successfully!"),
+                            ));
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                  builder: (context) => MyHomePage()),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context)
+                                .showSnackBar(const SnackBar(
+                              content: Text("Something went wrong, try again."),
+                            ));
+                          }
+                        }
                       }
                     },
                     child: const Text(

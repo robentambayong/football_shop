@@ -1,6 +1,82 @@
 # Football Shop - PBD Individual Assignment
 ### Roben Joseph B Tambayong
 
+## Assignment 9: Integration of Django Web Service with Flutter Application
+
+### 1. Explain why we need to create a Dart model when fetching/sending JSON data. What are the consequences of directly mapping `Map<String, dynamic>` without using a model?
+
+We create Dart models to convert the raw, unstructured JSON data received from Django into strongly-typed Dart objects.
+
+**Consequences of direct mapping (`Map<String, dynamic>`) without a model:**
+* **Type Validation:** Without a model, the compiler cannot verify data types. We might accidentally try to perform math on a `String` or treat an `int` as a `String`, leading to runtime crashes. Models enforce types (e.g., ensuring `price` is always an `int`).
+* **Null Safety:** Direct mapping makes it hard to track which fields might be null. Models allow us to explicitly define nullable vs. non-nullable fields (e.g., `String? thumbnail`), preventing "Null Pointer Exceptions."
+* **Maintainability:** Accessing data via string keys (e.g., `data['fields']['name']`) is prone to typos. If the backend API changes, we have to hunt down every string key in the code. With a model, we use dot notation (e.g., `product.fields.name`), which enables IDE autocompletion and makes the code easier to read and refactor.
+
+### 2. What is the purpose of the `http` and `CookieRequest` packages in this assignment? Explain the difference between their roles.
+
+* **`http`**: This is a low-level package used to perform standard network requests (GET, POST, PUT, DELETE). It handles the raw connection and data transfer between the Flutter app and the Django server.
+* **`CookieRequest` (from `pbp_django_auth`)**: This is a wrapper around the `http` package designed specifically for Django integration.
+    * **Difference:** The key difference is **session persistence**. The standard `http` package does not automatically store cookies. Every request is treated as a new, anonymous session. `CookieRequest` automatically stores the `sessionid` and `csrftoken` cookies sent by Django upon login and attaches them to all subsequent requests. This allows the server to recognize the user as "logged in."
+
+### 3. Explain why the `CookieRequest` instance needs to be shared across all components in the Flutter application.
+
+The `CookieRequest` instance holds the **state of the user's session** (specifically the session cookies/tokens).
+
+If we created a new `CookieRequest` instance in every widget (e.g., one in `LoginPage` and a different one in `ProductListPage`), the new instance would not have the cookies from the login event. The server would see the new instance as an unauthenticated stranger. By sharing a single instance using `Provider` at the root of the app, we ensure that the logged-in state persists across all screens, allowing the user to navigate seamlessly without logging in again.
+
+### 4. Explain the connectivity configuration required for Flutter to communicate with Django. Why do we need to add 10.0.2.2 to ALLOWED_HOSTS, enable CORS and SameSite/cookie settings, and add internet access permission in Android? What would happen if these configurations were not set correctly?
+
+* **`10.0.2.2`**: This is a special alias IP address used by the Android Emulator to refer to the host computer's `localhost` (127.0.0.1). Without adding this to `ALLOWED_HOSTS` in Django, the server would reject the request as a security violation because the "Host" header would not match.
+* **CORS (Cross-Origin Resource Sharing)**: Browsers and mobile apps block requests to different domains/ports for security. We enable `django-cors-headers` to explicitly tell the browser/app that it is safe to accept data from the Flutter app.
+* **SameSite/Cookie Settings**: `CSRF_COOKIE_SAMESITE = 'None'` and `SESSION_COOKIE_SAMESITE = 'None'` allow cookies to be sent across different "sites" (ports), which is necessary since Flutter and Django run on different ports during development.
+* **Internet Permission**: Android apps run in a secure sandbox and cannot access the network by default. We must explicitly request this permission in `AndroidManifest.xml`.
+
+**Consequences if incorrect:**
+Requests would fail immediately. You would see errors like `SocketException: Connection refused` (wrong IP), `400 Bad Request` (Allowed Hosts issue), `CORS policy` errors (in Chrome), or `403 Forbidden` (Cookie/CSRF issues).
+
+### 5. Describe the data transmission mechanism—from user input to being displayed in Flutter.
+
+1.  **Input:** The user enters data (e.g., Product Name and Price) into a `TextFormField` in Flutter.
+2.  **Serialization:** When "Save" is pressed, Flutter gathers this data and converts it into a JSON string using `jsonEncode`.
+3.  **Request:** The `CookieRequest` instance sends an HTTP POST request to the Django URL (e.g., `/create-flutter/`) carrying the JSON data and the session cookie.
+4.  **Backend Processing:** Django's view receives the request, deserializes the JSON body, validates it, and saves a new `Product` object to the database linked to the `request.user`.
+5.  **Response:** Django returns a JSON response (e.g., `{"status": "success"}`).
+6.  **Feedback:** Flutter receives the success message and navigates the user back to the list.
+7.  **Display:** On the `ProductListPage`, a GET request is sent. Django serializes the database objects into JSON. Flutter deserializes this JSON into `Product` Dart objects and renders them using a `ListView`.
+
+### 6. Explain the authentication mechanism for login, registration, and logout—from entering account data in Flutter to Django’s authentication process and displaying the menu in Flutter.
+
+* **Login:**
+    1.  User enters credentials in Flutter.
+    2.  `CookieRequest` sends a POST to `/login-ajax/`.
+    3.  Django's `authenticate()` function verifies the username/password.
+    4.  If valid, `login()` creates a session and returns a `sessionid` cookie.
+    5.  `CookieRequest` saves this cookie. Flutter navigates to `MyHomePage`.
+* **Registration:**
+    1.  User enters details in Flutter.
+    2.  Flutter sends a POST with JSON data to `/register-ajax/`.
+    3.  Django parses the JSON, checks if the user exists, and uses `User.objects.create_user()` to save the new account.
+    4.  Django returns a success JSON, and Flutter redirects to the Login page.
+* **Logout:**
+    1.  User taps "Logout" in the drawer.
+    2.  `CookieRequest` sends a request to `/logout-ajax/`.
+    3.  Django's `logout()` function deletes the session on the server side.
+    4.  Flutter receives the success message, clears the local session state (visually), and redirects to the `LoginPage`.
+
+### 7. Explain how you implemented the checklist above step-by-step (not just following a tutorial).
+
+1.  **Django Configuration:** I started by installing `django-cors-headers` and configuring `settings.py` (CORS middleware, ALLOWED_HOSTS including `10.0.2.2`, and CSRF settings) to allow the Flutter app to connect.
+2.  **Backend Logic Adjustment:** I created new views in Django (`login_ajax`, `register_ajax`, `logout_ajax`, `create_product_flutter`) specifically to handle JSON data, as the original views were designed for HTML forms. I ensured `get_products_json` could filter by the logged-in user (`?filter=my`).
+3.  **Flutter State Management:** I wrapped the root `MaterialApp` in `main.dart` with a `Provider` to share a single `CookieRequest` instance across the entire app for session management.
+4.  **Model Creation:** I created a `Product` model in Dart that strictly matches the fields in my Django `models.py`, ensuring data is parsed correctly.
+5.  **Page Implementation:**
+    * **Login/Register:** Created screens that accept input and use `request.postJson` to hit the Django endpoints.
+    * **Product List:** Used a `FutureBuilder` to fetch data from `/get-products/` and a `ListView` to display the `Product` cards.
+    * **Product Form:** Created a form that validates input and sends a JSON POST request to create new items.
+6.  **Navigation & UX:** I updated the `LeftDrawer` to conditionally show the "Logout" button only when logged in and ensured navigation between pages (using `pushReplacement` for Login->Home) felt natural. I also standardized the Color Scheme to `Green (#388E3C)` to match my Django website.
+
+---
+
 ## Assignment 8: Flutter Navigation, Layouts, Forms, and Input Elements
 
 ### 1. Explain the difference between `Navigator.push()` and `Navigator.pushReplacement()` in Flutter. In what context of your application is each best used?
